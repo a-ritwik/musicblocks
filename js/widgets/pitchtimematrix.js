@@ -1595,7 +1595,7 @@ function PitchTimeMatrix () {
             var endOfStackIdx = idx;
 
             // Add a vspace to prevent divide block from obscuring the pitch block.
-            newStack.push([idx + 1, 'vspace', 0, 0, [idx, idx + 5]]);
+            newStack.push([idx + 1, 'vspace', 0, 0, [idx, idx + 7]]);
 
             // note value is saved as a fraction
             newStack.push([idx + 2, 'divide', 0, 0, [idx, idx + 3, idx + 4]]);
@@ -1606,14 +1606,20 @@ function PitchTimeMatrix () {
                 console.log(i + ': ' + this._outputAsTuplet[i][0] + 'x' + this._outputAsTuplet[i][1]);
             }
 
+
             if (parseInt(note[1]) < note[1]) {
                 // dotted note
                 var obj = toFraction(note[1]);
                 newStack.push([idx + 3, ['number', {'value': obj[1]}], 0, 0, [idx + 2]]);
-                newStack.push([idx + 4, ['number', {'value': obj[0]}], 0, 0, [idx + 2]]);
+                newStack.push([idx + 4, 'multiply', 0, 0, [idx+2, idx + 5, idx + 6]]);
+                newStack.push([idx + 5, ['number', {'value': this._notesToPlay.length}], 0, 0, [idx + 4]]);
+                newStack.push([idx + 6, ['number', {'value': obj[0]/this._notesToPlay.length}], 0, 0, [idx + 4]]);
             } else {
-                newStack.push([idx + 3, ['number', {'value': 1}], 0, 0, [idx + 2]]);
-                newStack.push([idx + 4, ['number', {'value': note[1]}], 0, 0, [idx + 2]]);
+                var obj = toFraction(note[1]);
+                newStack.push([idx + 3, ['number', {'value': obj[1]}], 0, 0, [idx + 2]]);
+                newStack.push([idx + 4, 'multiply', 0, 0, [idx+2, idx + 5, idx + 6]]);
+                newStack.push([idx + 5, ['number', {'value': this._notesToPlay.length}], 0, 0, [idx + 4]]);
+                newStack.push([idx + 6, ['number', {'value': obj[0]/this._notesToPlay.length}], 0, 0, [idx + 4]]);
             }
 
             // Connect the Note block flow to the divide and vspace blocks.
@@ -1654,6 +1660,7 @@ function PitchTimeMatrix () {
                         var drumName = null;
                     } else {
                        var obj = note[0][j].split(':');
+                       console.log('OBJ ' +obj);
                        var drumName = getDrumName(note[0][j]);
                     }
 
@@ -1699,6 +1706,7 @@ function PitchTimeMatrix () {
                     } else if (obj.length > 2) {
                         // add a 2-arg graphics block
                         // The last connection in last pitch block is null.
+                        console.log('OBJLENGTH greater than 2');
                         if (note[0].length === 1 || j === note[0].length - 1) {
                             var lastConnection = null;
                         } else {
@@ -1713,6 +1721,7 @@ function PitchTimeMatrix () {
                     } else if (obj.length > 1) {
                         // add a 1-arg graphics block
                         // The last connection in last pitch block is null.
+                        console.log('OBJLENGTH greater than 1');
                         if (note[0].length === 1 || j === note[0].length - 1) {
                             var lastConnection = null;
                         } else {
@@ -1725,7 +1734,7 @@ function PitchTimeMatrix () {
                         previousBlock = thisBlock - 2;
                     } else {
                         // add a pitch block
-
+                        console.log('BIG ELSE');
                         // The last connection in last pitch block is null.
                         if (note[0].length === 1 || j === note[0].length - 1) {
                             var lastConnection = null;
@@ -1734,11 +1743,12 @@ function PitchTimeMatrix () {
                         }
 
                         if (note[0][j][1] === '♯') {
+                            console.log('IF');
                             newStack.push([thisBlock, 'accidental', 0, 0, [previousBlock, thisBlock + 1, thisBlock + 2, thisBlock + 5]]);
                             newStack.push([thisBlock + 1, ['accidentalname', {value: _('sharp') + ' ♯'}], 0, 0, [thisBlock]]);
-                            newStack.push([thisBlock + 2, 'pitch', 0, 0, [thisBlock, thisBlock + 3, thisBlock + 4, null]]);
-                            newStack.push([thisBlock + 3, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock + 2]]);
-                            newStack.push([thisBlock + 4, ['number', {'value': note[0][j][2]}], 0, 0, [thisBlock + 2]]);
+                            newStack.push([thisBlock + 7, 'pitch', 0, 0, [thisBlock, thisBlock + 3, thisBlock + 4, null]]);
+                            newStack.push([thisBlock + 8, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock + 2]]);
+                            newStack.push([thisBlock + 9, ['number', {'value': note[0][j][2]}], 0, 0, [thisBlock + 2]]);
                             if (lastConnection != null) {
                                 lastConnection += 3;
                             }
@@ -1747,11 +1757,12 @@ function PitchTimeMatrix () {
                             previousBlock = thisBlock + 5;
                             thisBlock += 6;
                         } else if (note[0][j][1] === '♭') {
+                            console.log('ELSE IF');
                             newStack.push([thisBlock, 'accidental', 0, 0, [previousBlock, thisBlock + 1, thisBlock + 2, thisBlock + 5]]);
                             newStack.push([thisBlock + 1, ['accidentalname', {value: _('flat') + ' ♭'}], 0, 0, [thisBlock]]);
-                            newStack.push([thisBlock + 2, 'pitch', 0, 0, [thisBlock, thisBlock + 3, thisBlock + 4, null]]);
-                            newStack.push([thisBlock + 3, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock + 2]]);
-                            newStack.push([thisBlock + 4, ['number', {'value': note[0][j][2]}], 0, 0, [thisBlock + 2]]);
+                            newStack.push([thisBlock + 7, 'pitch', 0, 0, [thisBlock, thisBlock + 3, thisBlock + 4, null]]);
+                            newStack.push([thisBlock + 8, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock + 2]]);
+                            newStack.push([thisBlock + 9, ['number', {'value': note[0][j][2]}], 0, 0, [thisBlock + 2]]);
                             if (lastConnection != null) {
                                 lastConnection += 3;
                             }
@@ -1760,9 +1771,10 @@ function PitchTimeMatrix () {
                             previousBlock = thisBlock + 5;
                             thisBlock += 6;
                         } else {
-                            newStack.push([thisBlock, 'pitch', 0, 0, [previousBlock, thisBlock + 1, thisBlock + 2, lastConnection]]);
-                            newStack.push([thisBlock + 1, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock]]);
-                            newStack.push([thisBlock + 2, ['number', {'value': note[0][j][1]}], 0, 0, [thisBlock]]);
+                            console.log('ELSE');
+                            newStack.push([thisBlock+2, 'pitch', 0, 0, [previousBlock, thisBlock + 3, thisBlock + 4, lastConnection]]);
+                            newStack.push([thisBlock + 3, ['solfege', {'value': SOLFEGECONVERSIONTABLE[note[0][j][0]]}], 0, 0, [thisBlock+2]]);
+                            newStack.push([thisBlock + 4, ['number', {'value': note[0][j][1]}], 0, 0, [thisBlock+2]]);
                             previousBlock = thisBlock;
                             thisBlock += 3;
                         }
@@ -1772,7 +1784,6 @@ function PitchTimeMatrix () {
         }
 
         // Create a new stack for the chunk.
-        console.log(newStack);
         this._logo.blocks.loadNewBlocks(newStack);
     };
 };
