@@ -17,6 +17,22 @@
 // rulerButtonsDiv is for the widget buttons
 // rulerTableDiv is for the drum buttons (fixed first col) and the ruler cells
 
+function lcmIter(arr,len){
+    if(len === 2){
+        return LCD(arr[0],arr[1])
+    } else {
+        return LCD(arr[len-1],lcmIter(arr,len-1))
+    }
+}
+
+function gcdIter(arr,len){
+    if(len === 2){
+        return GCD(arr[0],arr[1])
+    } else {
+        return GCD(arr[len-1],gcdIter(arr,len-1))
+    }
+}
+
 function RhythmRuler () {
     const BUTTONDIVWIDTH = 476;  // 8 buttons 476 = (55 + 4) * 8
     const OUTERWINDOWWIDTH = 675;
@@ -856,6 +872,7 @@ function RhythmRuler () {
     };
 
     this._playOne = function () {
+    	console.log('this._rulerSelected '+this._rulerSelected );
         this._logo.synth.stop();
         this._logo.resetSynth(0);
         if (this._startingTime == null) {
@@ -874,6 +891,7 @@ function RhythmRuler () {
         }
 
         var ruler = docById('ruler' + rulerNo);
+        console.log('ruler '  +ruler );
         if (ruler == null) {
             console.log('Cannot find ruler ' + rulerNo + '. Widget closed?');
             return;
@@ -885,7 +903,9 @@ function RhythmRuler () {
         }
 
         var cell = ruler.cells[colIndex];
+        console.log('cell ' +cell);
         var noteValues = this.Rulers[rulerNo][0];
+        console.log('noteValues ' +noteValues);
         var noteValue = noteValues[colIndex];
 
         noteTime = Math.abs(1 / noteValue);
@@ -905,6 +925,7 @@ function RhythmRuler () {
         if (that._playing) {
             // Play the current note.
             if (noteValue > 0) {
+            	console.log('8 of 8');
                 that._logo.synth.trigger(0, ['C4'], that._logo.defaultBPMFactor / noteValue, drum, null, null);
             }
 
@@ -1053,7 +1074,6 @@ function RhythmRuler () {
         setTimeout(function () {
             var ruler = docById('ruler' + selectedRuler);
             var noteValues = that.Rulers[selectedRuler][0];
-
             var delta = selectedRuler * 42;
             var newStack = [[0, ['start', {'collapsed': false}], 100 + delta, 100 + delta, [null, 1, null]]];
             newStack.push([1, 'forever', 0, 0, [0, 2, null]]);
@@ -1061,6 +1081,7 @@ function RhythmRuler () {
             var sameNoteValue = 1;
             for (var i = 0; i < ruler.cells.length; i++) {
                 if (noteValues[i] === noteValues[i + 1] && i < ruler.cells.length - 1) {
+                    console.log('note value is ' + noteValues[i]);
                     sameNoteValue += 1;
                     continue;
                 } else {
@@ -1133,9 +1154,35 @@ function RhythmRuler () {
         }, 500);
     };
 
+    this._showRuler = function() {
+         var evenIndexNumbers = [];
+         var oddIndexNumbers = [];
+         for (var z = 0; z < rhythmAndMeter.length; z++) {
+         	if (z%2 === 0) {
+         		evenIndexNumbers.push(rhythmAndMeter[z]);
+         	} else {
+         		oddIndexNumbers.push(rhythmAndMeter[z]);
+         	}
+         }
+         var lcmOfNumerator = lcmIter(evenIndexNumbers, evenIndexNumbers.length);
+         var gcdofDenominator = gcdIter(oddIndexNumbers, oddIndexNumbers.length);
+         var alignmentAfter = lcmOfNumerator/gcdofDenominator;
+         console.log('Alignment will happen after ' + alignmentAfter + ' Units.');
+         for (var k = 0; k < rhythmAndMeter.length; k=k+4) {
+         	console.log('Meter ' + ((k/4)+1) +' Should repeat for ' +alignmentAfter/(rhythmAndMeter[k]/rhythmAndMeter[k+1]));
+         }
+
+         // If alignment occurs after very long way 
+         if (alignmentAfter > 3) {
+         	alignmentAfter = 2;
+         }
+    };
+
     this.init = function (logo) {
         console.log('init RhythmRuler');
-
+        meterCount = 0;
+        currentMeterNoteNum = 1;
+		currentMeterNoteDen = 1;
         this._logo = logo;
 
         this._bpmFactor = 1000 * TONEBPM / this._logo._masterBPM;
@@ -1180,8 +1227,8 @@ function RhythmRuler () {
         // For the button callbacks
         var that = this;
 
-        this._playAllCell = this._addButton(row, 'play-button.svg', iconSize, _('play all'), '');
 
+        this._playAllCell = this._addButton(row, 'play-button.svg', iconSize, _('play all'), '');
         this._playAllCell.onclick = function () {
             if (that._playing) {
                 that.__pause();
@@ -1200,6 +1247,11 @@ function RhythmRuler () {
         var cell = this._addButton(row, 'export-drums.svg', iconSize, _('save drum machine'), '');
         cell.onclick = function () {
             that._saveDrumMachine(0);
+        };
+
+        var cell = this._addButton(row, 'oscillator.svg', iconSize, _('Show Ruler'), '');
+        cell.onclick = function () {
+            that._showRuler(0);
         };
 
         // An input for setting the dissect number
@@ -1382,7 +1434,10 @@ function RhythmRuler () {
         // Each row in the ruler table contains a play button in the
         // first column and a ruler table in the second column.
         var rhythmRulerTable = docById('rhythmRulerTable');
+        console.log('rhythmRulerTable ' +rhythmRulerTable);
         for (var i = 0; i < this.Rulers.length; i++) {
+        	console.log('AAAding ruler number ' +i);
+            var rhythmRulerTableRow1 = rhythmRulerTable.insertRow();
             var rhythmRulerTableRow = rhythmRulerTable.insertRow();
             var drumcell = this._addButton(rhythmRulerTableRow, 'play-button.svg', iconSize, _('play'), '<br>');
             drumcell.setAttribute('id', i);
@@ -1421,6 +1476,7 @@ function RhythmRuler () {
                 }
             };
 
+            var rulerCell = rhythmRulerTableRow1.insertCell();
             var rulerCell = rhythmRulerTableRow.insertCell();
             // Create individual rulers as tables.
             rulerCell.innerHTML = '<table id="rulerCellTable' + i + '"></table>';
@@ -1466,6 +1522,14 @@ function RhythmRuler () {
             }
 
             // Match the play button height to the ruler height.
+            rhythmRulerTableRow1.cells[0].style.width = BUTTONSIZE + 'px';
+            rhythmRulerTableRow1.cells[0].style.minWidth = BUTTONSIZE + 'px';
+            rhythmRulerTableRow1.cells[0].style.maxWidth = BUTTONSIZE + 'px';
+            rhythmRulerTableRow1.cells[0].style.height = rulerRow.offsetHeight + 'px';
+            rhythmRulerTableRow1.cells[0].style.minHeight = rulerRow.offsetHeight + 'px';
+            rhythmRulerTableRow1.cells[0].style.maxHeight = rulerRow.offsetHeight + 'px';
+            rhythmRulerTableRow1.cells[0].style.verticalAlign = 'middle';
+
             rhythmRulerTableRow.cells[0].style.width = BUTTONSIZE + 'px';
             rhythmRulerTableRow.cells[0].style.minWidth = BUTTONSIZE + 'px';
             rhythmRulerTableRow.cells[0].style.maxWidth = BUTTONSIZE + 'px';
